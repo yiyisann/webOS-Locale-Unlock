@@ -1,0 +1,26 @@
+# Method and evidence
+
+## Discover → Audit → Backup → Apply → Verify → Restore
+
+**Discover.** Supply the private IPv4 and an existing app-launch pairing key. There is no subnet scan, new pairing, exploit or Root installation. The minimal SSAP adapter uses websocket-client to launch a fixed bootstrap page in Tiny Browser. The page calls the existing HBC exec API. A detached in-memory Node process reads native services and sends scoped evidence back to Windows. No helper files, startup hooks or listening ports are created on the TV.
+
+**Audit.** Read actual uid, model/firmware/internal SDK, full `localeInfo` and its preference mirror, the filtered language list, locale definitions and target catalog presence. Read only the explicit region/broadcast configuration names, Area Option via two native readers, HBC configuration/version, startup hash and hook names. Audit is not a full firmware translation scan; layouts unlike the known profile can fail. Resource existence is not proof of complete translation or runtime compatibility.
+
+UI chooses the main interface language. TV selects a different OSD preference; changing UI does not establish that TV OSD changed. FMT, NLP, audio locales and keyboards are separate. The original experiment observed STT following UI even though the request retained original STT. No claim is made that voice recognition accuracy or Japanese voice commands remain unchanged.
+
+**Backup.** Persist the entire current object, including unknown fields, plus protected baseline and native locale response/mirror. HMAC authenticates the private backup with the existing pairing key; it does not encrypt it. No raw Settings DB access is needed. The earlier device experiment encountered DB ACL denial and successfully used native responses plus the preference mirror instead; this project does not bypass that ACL.
+
+**Apply.** Only the exact documented write profile is enabled. First verify detached watchdog uid=0/parent PID=1, kill its dummy child and observe a verified same-value restoration. The watchdog then spawns a separate writer; its request preserves the full baseline and changes only UI. There is one target write per session. Restoring original values, including the rehearsal, necessarily involves additional setter calls. No partial/global configuration file is overwritten.
+
+**Verify.** Request, raw native response, immediate readback, delayed readback and JSON Pointer differences are individually acknowledged only after Windows fsync. The writer waits for each acknowledgment before continuing. All differences count, including unknown fields and list changes. Only UI and explicitly opted-in STT may become the target. The detached guard independently checks the mirror and all protected baseline data, then watches the visual stage for drift. Success requires owner confirmation of Home, Quick Settings, Settings and original functions; an API success response alone is insufficient.
+
+**Restore.** Rejected writes, mismatches, child failure, controller loss or visual timeout restore the saved full original object using the native service, then read it back. Original means the actual saved object, not Japanese defaults. The guard makes at most three automatic recovery attempts, reports uncertain recovery and does not alter unrelated fields to force a pass. Manual Restore uses an authenticated backup and rehearses its own recovery first. No reboot or firmware change is part of the process.
+
+## Sources and what they establish
+
+- [LG TV Settings Service](https://webostv.developer.lge.com/develop/references/settings-service) documents reading `localeInfo`, including language and keyboard preferences. Its public TV API page documents the getter, not a supported third-party Root setter. The setter request used here is supported by the owner's retained real-device evidence.
+- [OSE LocalePrefsHandler.cpp, pinned revision](https://github.com/webosose/settingsservice/blob/d914394eeb8882a6a4c7a86872ecfa9b2af3be1b/Src/LocalePrefsHandler.cpp) shows a region filter comparing a language-group string with `langSel` plus a resource region. This is consistent with the observed Japanese list excluding Chinese despite installed resources. OSE is context, not proof that every proprietary TV branch is identical. The remaining Loading label's cause is consistent with that filtered list, but not independently traced through proprietary UI code.
+- [Homebrew Channel service documentation](https://github.com/webosbrew/webos-homebrew-channel#luna-service) describes its exec endpoint and warns execution is not necessarily Root. This tool checks actual uid and existing HBC state instead of inferring privilege from a successful response.
+- [SlopBro](https://github.com/throwaway96/slopbro) is external Root research context only. No exploit or third-party SSAP implementation is incorporated.
+
+The original Windows → Tiny Browser → HBC exec → detached Node → native Settings Service route, UI-only request, STT linkage, independent recovery rehearsal and owner observations have real-device evidence. The refactored CLI, new WebSocket framing adapter, packaging and its error paths have offline evidence only. [Compatibility](compatibility.md) keeps those claims separate.
